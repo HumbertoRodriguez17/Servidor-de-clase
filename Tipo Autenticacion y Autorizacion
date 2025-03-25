@@ -1,0 +1,54 @@
+1. Middleware de Autenticación
+
+const jwt = require('jsonwebtoken');
+
+const authenticate = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).send('Acceso denegado. No se proporcionó un token.');
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'secreta_clave');  // Reemplaza con tu clave secreta
+    req.user = decoded; // Guardamos la información del usuario en el objeto de la solicitud
+    next(); // Continuamos con la siguiente acción
+  } catch (err) {
+    res.status(401).send('Token no válido.');
+  }
+};
+
+module.exports = authenticate;
+
+//Middleware de Autenticación (authenticate): Se ejecuta primero y valida si el token JWT es válido. Si no lo es, la solicitud se rechaza.
+
+Middleware de Autorización
+const authorize = (requiredRole) => {
+  return (req, res, next) => {
+    const userRole = req.user?.role;
+
+    if (!userRole || userRole !== requiredRole) {
+      return res.status(403).send('Acceso denegado. No tienes permiso para acceder a este recurso.');
+    }
+
+    next(); // Continuamos con la siguiente acción
+  };
+};
+
+module.exports = authorize;
+
+const express = require('express');
+const authenticate = require('./middlewares/authenticate');
+const authorize = require('./middlewares/authorize');
+
+const app = express();
+
+app.get('/ruta-protegida', authenticate, authorize('admin'), (req, res) => {
+  res.send('Acceso a recurso protegido, autorizado correctamente.');
+});
+
+app.listen(3000, () => {
+  console.log('Servidor escuchando en el puerto 3000');
+});
+Middleware de Autorización (authorize): Si la autenticación es exitosa, este middleware verifica que el usuario tenga el rol requerido 
+(en este caso, "admin") para acceder a la ruta.
